@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>stock advisor terminal</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #05070a; color: #00ff41; font-family: 'JetBrains Mono', monospace; overflow-x: hidden; }
+        .cr-terminal { border: 1px solid #1a2e1a; background: rgba(0, 20, 0, 0.5); backdrop-filter: blur(10px); color: #00ff41; box-shadow: 0 0 20px rgba(0, 255, 65, 0.05); }
+        .card { background: #0a0f14; border: 1px solid #16212e; color: #00ff41; border-radius: 0; }
+        .btn-go { background: #00ff41; color: #000; border: none; font-weight: bold; padding: 6px; }
+        .form-control { background: #000; border: 1px solid #1a2e1a; color: #00ff41; font-size: 0.9rem; border-radius: 0; }
+        .form-control:focus { background: #000; color: #00ff41; border-color: #00ff41; box-shadow: none; }
+        .log-box { font-size: 0.75rem; height: 120px; overflow-y: auto; background: #000; border: 1px solid #1a2e1a; padding: 8px; color: #008f11; }
+        .watchlist-item { cursor: pointer; border-bottom: 1px solid #1a2e1a; padding: 4px 0; font-size: 0.85rem; }
+        .watchlist-item:hover { color: #fff; background: rgba(0,255,65,0.1); }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #00ff41; }
+        .btn-exp { font-size: 0.7rem; color: #008f11; text-decoration: none; border: 1px solid #1a2e1a; padding: 2px 5px; }
+        .btn-exp:hover { color: #fff; border-color: #00ff41; }
+    </style>
+</head>
+<body class="p-3">
+
+<div class="container-fluid">
+    <header class="d-flex justify-content-between align-items-end mb-3 border-bottom border-success pb-2">
+        <div>
+            <h4 class="m-0 fw-bold text-uppercase">stock advisor</h4>
+            <small style="color: #008f11;">session: gauravgoodreads@terminal</small>
+        </div>
+        <div id="clock" style="font-size: 0.8rem;"></div>
+    </header>
+
+    <div class="row g-2 mb-3">
+        <div class="col-md-3"><div class="card p-2">NET WORTH: <span id="s-net">--</span></div></div>
+        <div class="col-md-3"><div class="card p-2">CASH: <span id="s-cash">--</span></div></div>
+        <div class="col-md-3"><div class="card p-2">PROFITS: <span id="s-pnl">--</span></div></div>
+        <div class="col-md-3"><div class="card p-2">STATUS: <span id="s-status" class="text-white">SCANNING...</span></div></div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-2">
+            <div class="card p-2 h-100">
+                <h6 class="border-bottom border-success pb-1">WATCHLIST</h6>
+                <div id="w-list"></div>
+                <div class="mt-auto pt-2">
+                    <input type="text" id="w-add" class="form-control form-control-sm mb-1" placeholder="ticker">
+                    <button class="btn btn-sm btn-outline-success w-100" onclick="watch()">ADD_TO_WATCH</button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-7">
+            <div class="card p-3 mb-2">
+                <table class="table table-dark table-sm m-0" style="font-size: 0.85rem;">
+                    <thead><tr><th>SYM</th><th>QTY</th><th>AVG</th><th>NOW</th><th>PNL</th></tr></thead>
+                    <tbody id="p-rows"></tbody>
+                </table>
+            </div>
+            <div class="card p-2">
+                <div class="d-flex justify-content-between">
+                    <h6 style="font-size: 0.8rem;">HISTORY</h6>
+                    <a href="/api/export" class="btn-exp">EXPORT_CSV</a>
+                </div>
+                <div id="h-list" style="font-size: 0.75rem;" class="mt-1"></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 mb-2">
+                <h6>EXECUTE ORDER</h6>
+                <div class="row g-1">
+                    <div class="col-7"><input type="text" id="tic" class="form-control" placeholder="TICKER"></div>
+                    <div class="col-5"><select id="typ" class="form-control"><option value="BUY">BUY</option><option value="SELL">SELL</option></select></div>
+                </div>
+                <input type="number" id="num" class="form-control mt-2 mb-2" value="1">
+                <button class="btn-go w-100" onclick="trade()">RUN_CMD</button>
+            </div>
+            <div class="card p-3">
+                <h6>AI_SCANNER</h6>
+                <div class="input-group">
+                    <input type="text" id="ai-tic" class="form-control" placeholder="SYMBOL">
+                    <button class="btn btn-outline-success" onclick="getTip()">SCAN</button>
+                </div>
+                <div id="ai-out" class="mt-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-12 text-center text-muted mb-1" style="font-size: 0.6rem;">SYSTEM REAL-TIME FEED</div>
+        <div class="col-12">
+            <div class="log-box" id="logs">
+                > booting...<br>
+                > user: gauravgoodreads identified<br>
+                > models loaded successfully<br>
+                > terminal ready.
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function log(m) { 
+        const l = document.getElementById('logs');
+        l.innerHTML += `> [${new Date().toLocaleTimeString()}] ${m}<br>`;
+        l.scrollTop = l.scrollHeight;
+    }
+
+    async function sync() {
+        try {
+            const r = await fetch('/api/portfolio');
+            const j = await r.json();
+            if(j.status === 'ok') {
+                const d = j.data;
+                document.getElementById('s-net').innerText = '₹' + d.net.toLocaleString();
+                document.getElementById('s-cash').innerText = '₹' + d.cash.toLocaleString();
+                document.getElementById('s-pnl').innerText = '₹' + d.pnl.toLocaleString();
+                document.getElementById('s-status').innerText = "LIVE";
+                
+                document.getElementById('p-rows').innerHTML = d.stocks.map(s => `
+                    <tr>
+                        <td><b>${s.s}</b></td>
+                        <td>${s.q}</td>
+                        <td>${s.avg}</td>
+                        <td>${s.p}</td>
+                        <td class="${s.pnl>=0?'text-success':'text-danger'}">${s.pnl}</td>
+                    </tr>
+                `).join('');
+
+                const h = d.history.slice(0, 5); // top 5
+                document.getElementById('h-list').innerHTML = h.map(h => `
+                    <div class="text-secondary">[${h.date}] ${h.type} ${h.qty} ${h.symbol} @ ₹${h.price}</div>
+                `).join('');
+
+                document.getElementById('w-list').innerHTML = d.watchlist.map(w => `
+                    <div class="watchlist-item d-flex justify-content-between" onclick="document.getElementById('ai-tic').value='${w.s}';getTip();">
+                        <span>${w.s}</span><span>${w.p}</span>
+                    </div>
+                `).join('');
+            }
+        } catch(e) { log("sync error check wifi"); }
+    }
+
+    async function trade() {
+        const payload = { s: document.getElementById('tic').value, o: document.getElementById('typ').value, q: parseInt(document.getElementById('num').value) };
+        log(`transmitting ${payload.o} for ${payload.s}...`);
+        const r = await fetch('/api/trade', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        const res = await r.json();
+        log(`msg: ${res.msg}`);
+        sync();
+    }
+
+    async function watch() {
+        const s = document.getElementById('w-add').value;
+        if(!s) return;
+        const r = await fetch('/api/watch', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({s}) });
+        const res = await r.json();
+        log(res.msg);
+        document.getElementById('w-add').value = '';
+        sync();
+    }
+
+    async function getTip() {
+        const tic = document.getElementById('ai-tic').value;
+        if(!tic) return;
+        const out = document.getElementById('ai-out');
+        out.innerHTML = "<span class='text-white'>accessing api...</span>";
+        log(`querying model for ${tic}...`);
+        const r = await fetch('/api/tip/' + tic);
+        const j = await r.json();
+        if(j.status === 'ok') {
+            out.innerHTML = `
+                <div class="p-2 border border-success" style="font-size:0.8rem;">
+                <b>${j.s}</b>: <span class="text-white">${j.now}</span><br>
+                Confidence: <span style="color:#fff">${j.conf}%</span><br>
+                Sentiment: <span class="text-white text-uppercase">${j.sent}</span><br>
+                Call: <span class="badge ${j.call.includes('buy')?'bg-success text-black':'bg-danger'}">${j.call}</span><br>
+                <small class="text-muted d-block mt-1">${j.txt}</small>
+                </div>
+            `;
+            log(`model inference complete for ${j.s}. confidence ${j.conf}%.`);
+        } else { out.innerHTML = "err."; log("api query failed."); }
+    }
+
+    setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleString(); }, 1000);
+    sync();
+    setInterval(sync, 15000);
+</script>
+</body>
+</html>

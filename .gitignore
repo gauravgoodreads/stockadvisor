@@ -1,0 +1,24 @@
+# gauravgoodreads - stock advisor
+
+# ignore stuff i don't want in git
+*.db
+instance/
+__pycache__/
+*.pyc
+venv/
+.venv/
+.env*.local
+.DS_Store
+node_modules/
+.next/
+
+# no agent / ai logs
+.gemini/
+.agents/
+.agent/
+_agents/
+_agent/
+brain/
+logs/
+*.log
+tmp/
