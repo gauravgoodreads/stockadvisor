@@ -54,6 +54,7 @@ def run_model(s):
     except:
         return "err", 0.0, 0
 
+def market_sentiment(s):
     # simple heuristic based on recent performance
     # adds extra context to the scan
     try:
