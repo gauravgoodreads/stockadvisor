@@ -14,7 +14,8 @@ from datetime import datetime, timedelta
 
 def get_indicators(s):
     try:
-        df = yf.download(s, period="1y", progress=False)
+        t = yf.Ticker(s)
+        df = t.history(period="1y")
         if len(df) < 50: return "err", 0.0, 0, 0
         df['r'] = df['Close'].pct_change()
         v = df['r'].std() * np.sqrt(252)
@@ -36,7 +37,8 @@ class Net(nn.Module):
 
 def run_model(s):
     try:
-        df = yf.download(s, period="6mo", progress=False)
+        t = yf.Ticker(s)
+        df = t.history(period="6mo")
         if len(df) < 60: return "err", 0.0, 0
         p = df['Close'].values.reshape(-1, 1)
         sc = MinMaxScaler()
@@ -58,13 +60,15 @@ def market_sentiment(s):
     # simple heuristic based on recent performance
     # adds extra context to the scan
     try:
-        df = yf.download(s, period="5d", progress=False)
+        t = yf.Ticker(s)
+        df = t.history(period="5d")
+        if df.empty or len(df) < 2: return "neutral"
         ret = (df['Close'].iloc[-1] - df['Close'].iloc[0]) / df['Close'].iloc[0]
-        if ret > 0.02: return "bullish"
-        if ret < -0.02: return "bearish"
+        if ret > 0.01: return "bullish"
+        if ret < -0.01: return "bearish"
         return "neutral"
     except:
-        return "?"
+        return "neutral"
 
 def get_tip(s):
     from trading_engine import fix_t
@@ -75,13 +79,13 @@ def get_tip(s):
     
     if move == "up":
         call = "strong buy" if (risk == "low" and sent == "bullish") else "spec buy"
-        txt = f"tech indicators look good. market is {sent}."
+        txt = f"tech indicators showing green. market is {sent}."
     elif move == "down":
-        call = "stay away" if risk == "high" else "wait"
-        txt = f"bearish crossover detected. sentiment is {sent}."
+        call = "stay away" if (risk == "high" or sent == "bearish") else "wait"
+        txt = f"bearish patterns detected. sentiment is {sent}."
     else:
         call = "hold"
-        txt = f"sideways market ({sent}). nothing to do."
+        txt = f"sideways market ({sent}). keep it on radar."
         
     return {
         's': s, 'risk': risk, 'move': move, 'call': call,
