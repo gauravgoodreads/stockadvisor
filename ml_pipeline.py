@@ -78,15 +78,29 @@ def get_tip(s):
     sent = market_sentiment(s)
     
     if move == "up":
-        call = "strong buy" if (risk == "low" and sent == "bullish") else "spec buy"
-        txt = f"tech indicators showing green. market is {sent}."
+        if sent == "bullish":
+            call = "strong buy"
+            txt = f"perfect alignment: ai predicts growth & recent trend is bullish. low risk entry."
+        elif sent == "bearish":
+            call = "spec buy"
+            txt = f"mixed signals: ai predicts long-term recovery but short-term trend is bearish. watch for reversal."
+        else:
+            call = "buy"
+            txt = f"positive outlook: ai predicts upward move. short-term trend is neutral."
     elif move == "down":
-        call = "stay away" if (risk == "high" or sent == "bearish") else "wait"
-        txt = f"bearish patterns detected. sentiment is {sent}."
+        if sent == "bearish":
+            call = "stay away"
+            txt = f"danger zone: both ai and market sentiment are bearish. high risk of further drop."
+        elif sent == "bullish":
+            call = "wait"
+            txt = f"caution: market is bullish right now, but ai sees a bearish trend ahead. profit taking recommended."
+        else:
+            call = "sell/wait"
+            txt = f"negative bias: ai expects price drop. market sentiment is neutral."
     else:
         call = "hold"
-        txt = f"sideways market ({sent}). keep it on radar."
-        
+        txt = f"sideways move expected. market sentiment is {sent}. keep on watchlist."
+
     return {
         's': s, 'risk': risk, 'move': move, 'call': call,
         'txt': txt, 'v': v, 'tgt': tgt, 'conf': conf,

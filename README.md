@@ -36,8 +36,22 @@ it's super easy to get going:
    - hit the export_csv link above the history to get your trade logs.
    - run pytest test_engine.py if you want to see the tests in action.
 
-## project notes
-- i used sqlite so you don't need to setup a big db.
-- the data is live from yahoo finance, so it only works when you're online.
+### supported tickers
+since the app connects to yfinance, you can try almost anything. here are some good ones for testing:
+- **us tech**: AAPL, TSLA, NVDA, MSFT
+- **indian market**: RELIANCE.NS, TCS.NS, ZOMATO.NS (added .NS for nse stocks!)
+- **stable picks**: KO, JNJ, PG
+- **high volatility**: GME, AMC, COIN
 
-*made by gauravgoodreads*
+### edge cases & logic
+- **ticker normalization**: if you type just `RELIANCE`, the backend handles the mapping to `RELIANCE.NS` so it doesn't break the fetch.
+- **data gaps**: if a stock is brand new or has no trading history for the last 60 days, the ai scanner returns a clean error message rather than crashing.
+- **fees**: every trade has a 0.1% brokerage fee baked into the cost basis, just to keep it realistic.
+- **mixed signals**: the ai scanner handles conflicts (e.g. bullish long-term prediction vs bearish short-term sentiment) by giving a cautious "wait" or "spec buy" call.
+
+### how to run
+1. `pip install -r requirements.txt`
+2. `python app.py`
+3. open `http://localhost:5000` in your browser and start trading!
+
+shoutout to the open source community for the libraries. made with passion by gauravgoodreads.
